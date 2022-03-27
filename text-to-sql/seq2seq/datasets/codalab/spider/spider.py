@@ -106,7 +106,7 @@ class Spider(datasets.GeneratorBasedBuilder):
             datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 gen_kwargs={
-                    "data_filepaths": [os.path.join(downloaded_filepath, "/data/dev_mini.json")],
+                    "data_filepaths": [os.path.join(downloaded_filepath, "/data/dev.json")],
                     "db_path": os.path.join(downloaded_filepath, "/database"),
                 },
             ),

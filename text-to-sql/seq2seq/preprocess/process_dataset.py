@@ -56,7 +56,7 @@ def init_dataset_path(data_base_dir, dataset_name, mode):
     elif mode == "dev": 
         if dataset_name in ["spider", "sparc"] :
             # dataset_path=os.path.join(data_base_dir, "ori_dataset", dataset_name, "dev.json")
-            dataset_path=os.path.join(data_base_dir, "/data/dev_mini.json")
+            dataset_path=os.path.join(data_base_dir, "/data/dev.json")
         elif dataset_name == "cosql":
             db_dir = os.path.join(data_base_dir, "ori_dataset", "cosql_dataset", "database")
             dataset_path=os.path.join(data_base_dir, "ori_dataset", "cosql_dataset/sql_state_tracking/", "cosql_dev.json")
