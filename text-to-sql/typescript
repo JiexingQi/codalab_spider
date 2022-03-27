@@ -1,0 +1,6 @@
+Script started on 2022-03-04 13:34:46+00:00 [TERM="screen" TTY="/dev/pts/9" COLUMNS="-1" LINES="-1"]
+(base) jytang@server2:~/NLP/Text2sql/t5/picard$ 
+(base) jytang@server2:~/NLP/Text2sql/t5/picard$ ^C
+(base) jytang@server2:~/NLP/Text2sql/t5/picard$ exit
+
+Script done on 2022-03-04 13:35:00+00:00 [COMMAND_EXIT_CODE="130"]
