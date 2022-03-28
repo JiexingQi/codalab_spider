@@ -7,9 +7,11 @@ from .common_utils import Preprocessor
 from .align_tables import align_tables_by_dataset_name
 
 
-def process_tables(processor, tables_list, output_path=None):
+def process_tables(processor, tables_list, used_db_set, output_path=None):
     tables = {}
     for idx, each in tqdm(enumerate(tables_list)):
+        if each['db_id'] not in used_db_set:
+            continue
         tables[each['db_id']] = processor.preprocess_database(each)
     print('In total, process %d databases .' % (len(tables)))
     # if output_path is not None:
@@ -90,19 +92,28 @@ def preprocessing_generate_lgerels(data_base_dir, dataset_name, mode):
     # else:
     #     tables = pickle.load(open(table_out_path, 'rb'))
     #     print('Databases has been preprocessed. Use cache.')
-    with open(table_data_path, 'r') as load_f: 
-        fcntl.flock(load_f.fileno(), fcntl.LOCK_EX)
-        tables_list = json.load(load_f)
-    print('Firstly, preprocess the original databases ...')
-    tables_list = align_tables_by_dataset_name(dataset_name, tables_list)
-    print('Tables alignments done...')
-    start_time = time.time()
-    tables = process_tables(processor, tables_list, table_out_path)
-    print('Databases preprocessing costs %.4fs .' % (time.time() - start_time))    
-
     with open(dataset_path, 'r') as load_f: 
         fcntl.flock(load_f.fileno(), fcntl.LOCK_EX)
         dataset = json.load(load_f)
+    with open(table_data_path, 'r') as load_f: 
+        fcntl.flock(load_f.fileno(), fcntl.LOCK_EX)
+        tables_list = json.load(load_f)
+
+    print('Firstly, preprocess the original databases ...')
+    tables_list = align_tables_by_dataset_name(dataset_name, tables_list)
+    print('Tables alignments done...')
+
+    start_time = time.time()
+    used_db_set = set()
+    for _, entry in tqdm(enumerate(dataset)):
+        if dataset_name in ["spider"]:
+            used_db_set.add(entry["db_id"])
+        elif dataset_name in ["cosql", "sparc"]:
+            used_db_set.add(entry["database_id"])
+    tables = process_tables(processor, tables_list, used_db_set, table_out_path)
+    print('Databases preprocessing costs %.4fs .' % (time.time() - start_time))    
+
+
     # start_time = time.time()
     # if not os.path.exists(dataset_output_path):
     #     dataset = process_dataset(processor, dataset, tables, dataset_name, dataset_output_path)
