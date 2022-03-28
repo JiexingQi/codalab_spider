@@ -41,9 +41,7 @@ _HOMEPAGE = "https://yale-lily.github.io/sparc"
 
 _LICENSE = "CC BY-SA 4.0"
 
-# _URL = "https://drive.google.com/uc?export=download&id=13Abvu5SUMSP3SJM-ZIj66mOkeyAquR73"
-# _URL = "/home/jxqi/text2sql/data/sparc.zip"
-_URL = "../../../dataset_files/sparc.zip"
+
 
 
 class SParC(datasets.GeneratorBasedBuilder):
@@ -100,17 +98,10 @@ class SParC(datasets.GeneratorBasedBuilder):
 
         return [
             datasets.SplitGenerator(
-                name=datasets.Split.TRAIN,
-                gen_kwargs={
-                    "data_filepath": downloaded_filepath + "/sparc/train.json",
-                    "db_path": downloaded_filepath + "/sparc/database",
-                },
-            ),
-            datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 gen_kwargs={
-                    "data_filepath": downloaded_filepath + "/sparc/dev.json",
-                    "db_path": downloaded_filepath + "/sparc/database",
+                    "data_filepath": downloaded_filepath + "/data/sparc/dev.json",
+                    "db_path": downloaded_filepath + "/data/sparc/database",
                 },
             ),
         ]
