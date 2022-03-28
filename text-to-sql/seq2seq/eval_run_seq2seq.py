@@ -3,10 +3,10 @@ import sys
 import logging
 
 # ==============================Change Path=======================================
-import os
-abs_path = os.path.abspath(sys.argv[0])
-dir_path = abs_path.replace("/seq2seq/eval_run_seq2seq.py", "")
-sys.path.append(dir_path)
+# import os
+# abs_path = os.path.abspath(sys.argv[0])
+# dir_path = abs_path.replace("/seq2seq/eval_run_seq2seq.py", "")
+# sys.path.append(dir_path)
 # ================================================================================
 
 logging.basicConfig(
@@ -35,7 +35,7 @@ from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
 from tokenizers import AddedToken
 from seq2seq.utils.args import ModelArguments
 # from seq2seq.utils.picard_model_wrapper import PicardArguments, PicardLauncher, with_picard
-from seq2seq.utils.custom_picard_model_wrapper_new import PicardArguments, PicardLauncher, with_picard
+from seq2seq.utils.custom_picard_model_wrapper import PicardArguments, PicardLauncher, with_picard
 from seq2seq.utils.dataset import DataTrainingArguments, DataArguments
 from seq2seq.utils.dataset_loader import load_dataset
 from seq2seq.utils.spider import SpiderTrainer
@@ -151,11 +151,11 @@ def main() -> None:
     )
     assert isinstance(tokenizer, PreTrainedTokenizerFast), "Only fast tokenizers are currently supported"
     if isinstance(tokenizer, T5TokenizerFast):
+        print("This is a T5TokenizerFast.")
         # In T5 `<` is OOV, see https://github.com/google-research/language/blob/master/language/nqg/tasks/spider/restore_oov.py
         tokenizer.add_tokens([AddedToken(" <="), AddedToken(" <")])
 
     # Load dataset
-    # metric, dataset_splits = None, {"schemas": ""}
     metric, dataset_splits = load_dataset(
         data_args=data_args,
         model_args=model_args,
@@ -170,31 +170,20 @@ def main() -> None:
         if picard_args.use_picard:
             model_cls_wrapper = lambda model_cls: with_picard(
                 model_cls=model_cls, picard_args=picard_args, tokenizer=tokenizer, schemas=dataset_splits.schemas
-                # model_cls=model_cls, picard_args=picard_args, tokenizer=tokenizer, schemas=None
             )
         else:
             model_cls_wrapper = lambda model_cls: model_cls
 
         # Initialize model
-        # model = model_cls_wrapper(AutoModelForSeq2SeqLM).from_pretrained(
         model = model_cls_wrapper(T5ForConditionalGeneration).from_pretrained(
             model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
         )
-        # print(model)
-        # model = get_relation_t5_model(config=config)
-        # model = get_relation_debug_t5_model(config=config)
-        # model = model_cls_wrapper(T5ForConditionalGeneration).from_checkpoint("./experiment/t5-sparc-0312/checkpoint-2112") # SParC最高的EM
-        # model = model_cls_wrapper(T5ForConditionalGeneration).from_checkpoint("./experiment/t5-sparc-0312/checkpoint-2432") # SParC最高的EX
-        # model = model_cls_wrapper(T5ForConditionalGeneration).from_checkpoint("./experiment/t5-sparc-0312/checkpoint-2944") # 挑一个都挺高的
-        # model = model_cls_wrapper(AutoModel.from_pretrained).from_checkpoint(model_args.model_name_or_path) # 
-        # model = model_cls_wrapper(T5ForConditionalGeneration).from_checkpoint("./experiment/train_0308_t5_small_db_content_26001_weight_decay_00001_ls_00_lr_constant_bs_2064/checkpoint-9216") 
-        # model = get_original_t5_model(config=config)
-        # model = AutoModelForSeq2SeqLM.from_pretrained('t5-small')
-        # model = T5ForConditionalGeneration.from_pretrained('t5-small')
-        # tokenizer = AutoTokenizer.from_pretrained("t5-small")
-        # config = T5Config(decoder_start_token_id=tokenizer.convert_tokens_to_ids(['<pad>'])[0]) 
-        # config = T5Config()
-        # model = T5ForConditionalGeneration(config=config)
+
         if isinstance(model, T5ForConditionalGeneration):
             print("True")
         model.resize_token_embeddings(len(tokenizer))

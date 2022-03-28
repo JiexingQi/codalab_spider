@@ -159,4 +159,3 @@ transformers_cache/*
 **/dev.json
 **/tables.json
 !.gitkeep
-.DS_Store

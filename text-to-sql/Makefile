@@ -1,6 +1,6 @@
 # GIT_HEAD_REF := $(shell git rev-parse HEAD)
-# USE tscholak/text-to-sql-eval:35f43caadadde292f84e83962fbe5320a65d338f
-GIT_HEAD_REF := 35f43caadadde292f84e83962fbe5320a65d338f
+# USE tscholak/text-to-sql-eval:e37020b6eee18bff865d9d2ba852bd636f3ed777
+GIT_HEAD_REF := e37020b6eee18bff865d9d2ba852bd636f3ed777
 
 BASE_IMAGE := pytorch/pytorch:1.9.0-cuda11.1-cudnn8-devel
 
@@ -151,9 +151,9 @@ eval: pull-eval-image
 		--privileged=true \
 		--gpus all \
 		--user 13011:13011 \
-		--mount type=bind,source=$(BASE_DIR)/eval,target=/eval \
 		--mount type=bind,source=/home/jxqi/data,target=/data \
 		--mount type=bind,source=/home/jxqi/database,target=/database \
+		--mount type=bind,source=$(BASE_DIR)/eval,target=/eval \
 		--mount type=bind,source=$(BASE_DIR)/transformers_cache,target=/transformers_cache \
 		--mount type=bind,source=$(BASE_DIR)/configs,target=/app/configs \
 		--mount type=bind,source=$(BASE_DIR)/wandb,target=/app/wandb \
@@ -194,17 +194,3 @@ serve: pull-eval-image
 		--mount type=bind,source=$(BASE_DIR)/configs,target=/app/configs \
 		tscholak/$(EVAL_IMAGE_NAME):$(GIT_HEAD_REF) \
 		/bin/bash -c "python seq2seq/serve_seq2seq.py configs/serve.json"
-
-.PHONY: prediction_output
-prediction_output: pull-eval-image
-	mkdir -p -m 777 prediction_output
-	docker run \
-		-it \
-		--rm \
-		--user 13011:13011 \
-		-p 8000:8000 \
-		--mount type=bind,source=$(BASE_DIR)/prediction_output,target=/prediction_output \
-		--mount type=bind,source=$(BASE_DIR)/transformers_cache,target=/transformers_cache \
-		--mount type=bind,source=$(BASE_DIR)/configs,target=/app/configs \
-		tscholak/$(EVAL_IMAGE_NAME):$(GIT_HEAD_REF) \
-		/bin/bash -c "python seq2seq/prediction_output.py configs/prediction_output.json"

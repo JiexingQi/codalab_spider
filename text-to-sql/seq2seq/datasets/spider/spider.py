@@ -42,9 +42,7 @@ _HOMEPAGE = "https://yale-lily.github.io/spider"
 
 _LICENSE = "CC BY-SA 4.0"
 
-# _URL = "https://drive.google.com/uc?export=download&id=1_AckYkinAnhqmRQtGsQgUKAnTHxxX5J0"
-# _URL = "/home/jxqi/text2sql/data/spider.zip"
-_URL = "../../../dataset_files/spider.zip"
+
 
 
 class Spider(datasets.GeneratorBasedBuilder):
@@ -97,26 +95,15 @@ class Spider(datasets.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: datasets.DownloadManager) -> List[datasets.SplitGenerator]:
-        downloaded_filepath = dl_manager.download_and_extract(url_or_urls=_URL)
+
+        downloaded_filepath = ""
 
         return [
             datasets.SplitGenerator(
-                name=datasets.Split.TRAIN,
-                gen_kwargs={
-                    "data_filepaths": [
-                        os.path.join(downloaded_filepath, "spider/train_spider.json"),
-                        os.path.join(downloaded_filepath, "spider/train_others.json"),
-                    ]
-                    if self.include_train_others
-                    else [os.path.join(downloaded_filepath, "spider/train_spider.json")],
-                    "db_path": os.path.join(downloaded_filepath, "spider/database"),
-                },
-            ),
-            datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 gen_kwargs={
-                    "data_filepaths": [os.path.join(downloaded_filepath, "spider/dev.json")],
-                    "db_path": os.path.join(downloaded_filepath, "spider/database"),
+                    "data_filepaths": [os.path.join(downloaded_filepath, "/data/dev.json")],
+                    "db_path": os.path.join(downloaded_filepath, "/database"),
                 },
             ),
         ]

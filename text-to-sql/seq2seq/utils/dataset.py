@@ -90,13 +90,6 @@ class DataTrainingArguments:
             "which is used during ``evaluate`` and ``predict``."
         },
     )
-    num_return_sequences: Optional[int] = field(
-        default=None,
-        metadata={
-            "help": "The number of sequences to generate during evaluation. This argument will be passed to "
-            "``model.generate``, which is used during ``evaluate`` and ``predict``."
-        },
-    )
     ignore_pad_token_for_loss: bool = field(
         default=True,
         metadata={
@@ -140,45 +133,25 @@ class DataTrainingArguments:
 @dataclass
 class DataArguments:
     dataset: str = field(
-        metadata={"help": "The dataset to be used. Choose between ``spider``, ``cosql``, or ``cosql+spider``, or ``spider_realistic``, or ``spider_syn``, or ``spider_dk``."},
+        metadata={"help": "The dataset to be used. Choose between ``spider``, ``cosql``, or ``cosql+spider``."},
     )
     dataset_paths: Dict[str, str] = field(
         default_factory=lambda: {
             "spider": "./seq2seq/datasets/spider",
             "sparc": "./seq2seq/datasets/sparc",
             "cosql": "./seq2seq/datasets/cosql",
-            "spider_realistic": "./seq2seq/datasets/spider_realistic",
-            "spider_syn": "./seq2seq/datasets/spider_syn",
-            "spider_dk": "./seq2seq/datasets/spider_dk"
-
         },
         metadata={"help": "Paths of the dataset modules."},
-    )
-    dataset_local_paths: Dict[str, str] = field(
-        default_factory=lambda: {
-            "spider": "./seq2seq/datasets/codalab/spider",
-            "sparc": "./seq2seq/datasets/sparc",
-            "cosql": "./seq2seq/datasets/cosql",
-            "spider_realistic": "./seq2seq/datasets/spider_realistic",
-            "spider_syn": "./seq2seq/datasets/spider_syn",
-            "spider_dk": "./seq2seq/datasets/spider_dk"
-
-        },
-        metadata={"help": "Evaluate on codalab."},
     )
     metric_config: str = field(
         default="both",
         metadata={"help": "Choose between ``exact_match``, ``test_suite``, or ``both``."},
     )
-    #we are referencing spider_realistic to spider metrics only as both use the main spider dataset as base.
     metric_paths: Dict[str, str] = field(
         default_factory=lambda: {
             "spider": "./seq2seq/metrics/spider",
             "sparc": "./seq2seq/metrics/sparc",
-            "spider_realistic" : "./seq2seq/metrics/spider",
             "cosql": "./seq2seq/metrics/cosql",
-            "spider_syn":"./seq2seq/metrics/spider",
-            "spider_dk":"./seq2seq/metrics/spider"
         },
         metadata={"help": "Paths of the metric modules."},
     )
@@ -199,9 +172,6 @@ class DataArguments:
     split_dataset : Optional[str] = field(
         default="",
         metadata={"help": "The dataset name after spliting."})
-    load_from_local_json : Optional[bool] = field(
-        default=False,
-        metadata={"help": "Whether to load dev.json from local file(used only for codalab test.)"})
     
 
 

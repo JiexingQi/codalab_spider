@@ -44,8 +44,7 @@ def load_dataset(
     tokenizer: PreTrainedTokenizerFast,
 ) -> Tuple[Metric, DatasetSplits]:
     _spider_dataset_dict: Callable[[], DatasetDict] = lambda: datasets.load.load_dataset(
-        path=data_args.dataset_paths["spider"] if data_args.load_from_local_json is False else data_args.dataset_local_paths["spider"], 
-        cache_dir=model_args.cache_dir
+        path=data_args.dataset_paths["spider"], cache_dir=model_args.cache_dir
     )
     _spider_metric: Callable[[], Metric] = lambda: datasets.load.load_metric(
         path=data_args.metric_paths["spider"], config_name=data_args.metric_config, test_suite_db_dir=data_args.test_suite_db_dir
@@ -98,27 +97,6 @@ def load_dataset(
         data_training_args=data_training_args,
         tokenizer=tokenizer,
     )
-    #adding spider_realistic dataset, metric, using schema and preprocess funtions of spider as it is
-    _spider_realistic_dataset_dict : Callable[[], DatasetDict] = lambda: datasets.load.load_dataset(
-        path=data_args.dataset_paths['spider_realistic'], cache_dir=model_args.cache_dir
-    )
-    _spider_realistic_metric: Callable[[], Metric] = lambda: datasets.load.load_metric(
-        path=data_args.metric_paths["spider_realistic"], config_name=data_args.metric_config, test_suite_db_dir=data_args.test_suite_db_dir
-    )
-
-    _spider_syn_dataset_dict : Callable[[], DatasetDict] = lambda: datasets.load.load_dataset(
-        path=data_args.dataset_paths['spider_syn'], cache_dir=model_args.cache_dir
-    )
-    _spider_syn_metric: Callable[[], Metric] = lambda: datasets.load.load_metric(
-        path=data_args.metric_paths["spider_syn"], config_name=data_args.metric_config, test_suite_db_dir=data_args.test_suite_db_dir
-    )
-
-    _spider_dk_dataset_dict : Callable[[], DatasetDict] = lambda: datasets.load.load_dataset(
-        path=data_args.dataset_paths['spider_dk'], cache_dir=model_args.cache_dir
-    )
-    _spider_dk_metric: Callable[[], Metric] = lambda: datasets.load.load_metric(
-        path=data_args.metric_paths["spider_dk"], config_name=data_args.metric_config, test_suite_db_dir=data_args.test_suite_db_dir
-    )
 
     _prepare_splits_kwargs = {
         "data_args": data_args,
@@ -150,30 +128,6 @@ def load_dataset(
             dataset_dict=_sparc_dataset_dict(),
             add_serialized_schema=_sparc_add_serialized_schema,
             pre_process_function=_sparc_pre_process_function,
-            **_prepare_splits_kwargs,
-        )
-    elif data_args.dataset == "spider_realistic":
-        metric = _spider_realistic_metric()
-        dataset_splits = prepare_splits(
-            dataset_dict= _spider_realistic_dataset_dict(),
-            add_serialized_schema=_spider_add_serialized_schema,
-            pre_process_function=_spider_pre_process_function,
-            **_prepare_splits_kwargs,
-        )
-    elif data_args.dataset == "spider_dk":
-        metric = _spider_dk_metric()
-        dataset_splits = prepare_splits(
-            dataset_dict= _spider_dk_dataset_dict(),
-            add_serialized_schema=_spider_add_serialized_schema,
-            pre_process_function=_spider_pre_process_function,
-            **_prepare_splits_kwargs,
-        )
-    elif data_args.dataset == "spider_syn":
-        metric = _spider_syn_metric()
-        dataset_splits = prepare_splits(
-            dataset_dict= _spider_syn_dataset_dict(),
-            add_serialized_schema=_spider_add_serialized_schema,
-            pre_process_function=_spider_pre_process_function,
             **_prepare_splits_kwargs,
         )
     elif data_args.dataset == "cosql+spider":

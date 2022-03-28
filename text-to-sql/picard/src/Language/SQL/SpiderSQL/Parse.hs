@@ -346,7 +346,7 @@ colUnit sx = flip (<?>) "colUnit" $ do
     let p = do
           distinct <- optional (try $ isDistinct <* someSpace)
           (tabAli, col) <-
-            try ((Nothing,) <$> columnId sx <* notFollowedBy isDot)
+            try ((Nothing,) <$> columnId sx)
               <|> try
                 ( (,)
                     <$> (Just <$> (eitherP tableId alias' <* isDot))
