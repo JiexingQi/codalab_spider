@@ -158,9 +158,6 @@ eval: pull-eval-image
 		--mount type=bind,source=$(BASE_DIR)/configs,target=/app/configs \
 		--mount type=bind,source=$(BASE_DIR)/wandb,target=/app/wandb \
 		--mount type=bind,source=$(BASE_DIR)/seq2seq,target=/app/seq2seq \
-		--mount type=bind,source=$(BASE_DIR)/dataset_files,target=/app/dataset_files \
-		--mount type=bind,source=$(BASE_DIR)/experiment,target=/app/experiment \
-		--mount type=bind,source=/home/jxqi/text2sql/data,target=/app/data \
 		tscholak/$(EVAL_IMAGE_NAME):$(GIT_HEAD_REF) \
 		# /bin/bash -c "python seq2seq/run_seq2seq.py configs/eval.json"
 
