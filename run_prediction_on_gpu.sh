@@ -31,7 +31,7 @@ ls
 
 
 echo "Start running codalab_seq2seq"
-CUDA_VISIBLE_DEVICES="-1" python3 /app/seq2seq/eval_run_seq2seq.py /app/configs/eval_0325_codalab_local.json
+python3 /app/seq2seq/eval_run_seq2seq.py /app/configs/eval_0325_codalab_local.json
 echo "Finished running codalab_seq2seq"
 
 popd
