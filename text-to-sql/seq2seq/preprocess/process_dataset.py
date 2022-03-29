@@ -64,9 +64,9 @@ def init_dataset_path(data_base_dir, dataset_name, mode):
             table_data_path=os.path.join(data_base_dir, "/data/sparc/tables.json")
             db_dir = os.path.join(data_base_dir, "/data/sparc/database")
         elif dataset_name == "cosql":
-            db_dir = os.path.join(data_base_dir, "cosql_dataset", "database")
-            dataset_path=os.path.join(data_base_dir, "cosql_dataset", "sql_state_tracking", "cosql_dev.json")
-            table_data_path=os.path.join(data_base_dir, "cosql_dataset", "tables.json")
+            db_dir = os.path.join(data_base_dir, "/cosql_dataset/database")
+            dataset_path=os.path.join(data_base_dir, "/cosql_dataset/sql_state_tracking/cosql_dev.json")
+            table_data_path=os.path.join(data_base_dir, "/cosql_dataset/tables.json")
         else:
             raise NotImplementedError
         dataset_output_path=os.path.join(data_base_dir, "preprocessed_dataset", dataset_name, "dev.bin")
