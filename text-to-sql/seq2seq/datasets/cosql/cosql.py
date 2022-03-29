@@ -73,7 +73,7 @@ _LICENSE = "CC BY-SA 4.0"
 
 # _URL = "https://drive.google.com/uc?export=download&id=14x6lsWqlu6gR-aYxa6cemslDN3qT3zxP"
 # _URL = "/home/jxqi/text2sql/data/cosql_dataset.zip"
-_URL = "../../../dataset_files/cosql_dataset.zip"
+# _URL = "../../../dataset_files/cosql_dataset.zip"
 
 
 class CoSQL(datasets.GeneratorBasedBuilder):
@@ -126,16 +126,10 @@ class CoSQL(datasets.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager):
-        downloaded_filepath = dl_manager.download_and_extract(_URL)
+
+        downloaded_filepath = ""
 
         return [
-            datasets.SplitGenerator(
-                name=datasets.Split.TRAIN,
-                gen_kwargs={
-                    "data_filepath": downloaded_filepath + "/cosql_dataset/sql_state_tracking/cosql_train.json",
-                    "db_path": downloaded_filepath + "/cosql_dataset/database",
-                },
-            ),
             datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 gen_kwargs={

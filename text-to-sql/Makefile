@@ -159,7 +159,26 @@ eval: pull-eval-image
 		--mount type=bind,source=$(BASE_DIR)/wandb,target=/app/wandb \
 		--mount type=bind,source=$(BASE_DIR)/seq2seq,target=/app/seq2seq \
 		tscholak/$(EVAL_IMAGE_NAME):$(GIT_HEAD_REF) \
-		# /bin/bash -c "python seq2seq/run_seq2seq.py configs/eval.json"
+
+.PHONY: eval_sparc
+eval_sparc: pull-eval-image
+	mkdir -p -m 777 eval
+	mkdir -p -m 777 transformers_cache
+	mkdir -p -m 777 wandb
+	docker run \
+		-it \
+		--rm \
+		--ipc=host \
+		--privileged=true \
+		--gpus all \
+		--user 13011:13011 \
+		--mount type=bind,source=/home/jxqi/data_sparc,target=/data \
+		--mount type=bind,source=$(BASE_DIR)/eval,target=/eval \
+		--mount type=bind,source=$(BASE_DIR)/transformers_cache,target=/transformers_cache \
+		--mount type=bind,source=$(BASE_DIR)/configs,target=/app/configs \
+		--mount type=bind,source=$(BASE_DIR)/wandb,target=/app/wandb \
+		--mount type=bind,source=$(BASE_DIR)/seq2seq,target=/app/seq2seq \
+		tscholak/$(EVAL_IMAGE_NAME):$(GIT_HEAD_REF) \
 
 .PHONY: eval_cosql
 eval_cosql: pull-eval-image
@@ -169,13 +188,18 @@ eval_cosql: pull-eval-image
 	docker run \
 		-it \
 		--rm \
+		--ipc=host \
+		--privileged=true \
+		--gpus all \
 		--user 13011:13011 \
+		--mount type=bind,source=/home/jxqi/text2sql/picard_train_no_docker/dataset_files/ori_dataset/cosql_dataset,target=/cosql_dataset \
 		--mount type=bind,source=$(BASE_DIR)/eval,target=/eval \
 		--mount type=bind,source=$(BASE_DIR)/transformers_cache,target=/transformers_cache \
 		--mount type=bind,source=$(BASE_DIR)/configs,target=/app/configs \
 		--mount type=bind,source=$(BASE_DIR)/wandb,target=/app/wandb \
+		--mount type=bind,source=$(BASE_DIR)/seq2seq,target=/app/seq2seq \
 		tscholak/$(EVAL_IMAGE_NAME):$(GIT_HEAD_REF) \
-		/bin/bash -c "python seq2seq/run_seq2seq.py configs/eval_cosql.json"
+		# /bin/bash -c "python seq2seq/run_seq2seq.py configs/eval_cosql.json"
 
 .PHONY: serve
 serve: pull-eval-image
