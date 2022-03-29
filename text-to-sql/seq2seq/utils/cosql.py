@@ -125,8 +125,15 @@ class CoSQLTrainer(Seq2SeqTrainer):
         predictions = self.tokenizer.batch_decode(predictions, skip_special_tokens=True)
         assert len(metas) == len(predictions)
         with open(f"/eval/predicted_sql.txt", "w") as f:
-            for p in predictions:
-                p = p.split("|", 1)[-1].strip()
+            for i, (p, m) in enumerate(zip(predictions, metas)):
+                if i==0:
+                    continue
+                else:
+                    turn_idx=m["turn_idx"]
+                    if turn_idx == -1:
+                        p = ""
+                    else:
+                        p = p.split("|", 1)[-1].strip()
                 f.write(p)
                 f.write("\n")
         return EvalPrediction(predictions=predictions, label_ids=label_ids, metas=metas)
