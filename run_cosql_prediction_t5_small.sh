@@ -11,8 +11,7 @@ cp -r configs /app/
 popd
 
 echo "Start copy data"
-cp -r data /
-cp -r database /
+cp -r cosql_dataset /
 
 echo "pwd and ls"
 pwd
