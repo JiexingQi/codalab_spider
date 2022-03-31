@@ -96,12 +96,15 @@ class SParC(datasets.GeneratorBasedBuilder):
     def _split_generators(self, dl_manager):
         
         downloaded_filepath = ""
+        import os
+        is_test_file_exist = os.path.exists("/data/sparc/test.json")
+        dev_or_test_filepath = "/data/sparc/test.json" if is_test_file_exist else "/data/sparc/dev.json"
 
         return [
             datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 gen_kwargs={
-                    "data_filepath": downloaded_filepath + "/data/sparc/dev.json",
+                    "data_filepath": downloaded_filepath + dev_or_test_filepath,
                     "db_path": downloaded_filepath + "/data/sparc/database",
                 },
             ),

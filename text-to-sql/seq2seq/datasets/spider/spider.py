@@ -97,12 +97,15 @@ class Spider(datasets.GeneratorBasedBuilder):
     def _split_generators(self, dl_manager: datasets.DownloadManager) -> List[datasets.SplitGenerator]:
 
         downloaded_filepath = ""
+        import os
+        is_test_file_exist = os.path.exists("/data/test.json")
+        dev_or_test_filepath = "/data/test.json" if is_test_file_exist else "/data/dev.json"
 
         return [
             datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 gen_kwargs={
-                    "data_filepaths": [os.path.join(downloaded_filepath, "/data/dev.json")],
+                    "data_filepaths": [os.path.join(downloaded_filepath, dev_or_test_filepath)],
                     "db_path": os.path.join(downloaded_filepath, "/database"),
                 },
             ),

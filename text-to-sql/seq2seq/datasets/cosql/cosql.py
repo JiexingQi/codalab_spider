@@ -128,12 +128,15 @@ class CoSQL(datasets.GeneratorBasedBuilder):
     def _split_generators(self, dl_manager):
 
         downloaded_filepath = ""
+        import os
+        is_test_file_exist = os.path.exists("/cosql_dataset/sql_state_tracking/cosql_test.json")
+        dev_or_test_filepath = "/cosql_dataset/sql_state_tracking/cosql_test.json" if is_test_file_exist else "/cosql_dataset/sql_state_tracking/cosql_dev.json"
 
         return [
             datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 gen_kwargs={
-                    "data_filepath": downloaded_filepath + "/cosql_dataset/sql_state_tracking/cosql_dev.json",
+                    "data_filepath": downloaded_filepath + dev_or_test_filepath,
                     "db_path": downloaded_filepath + "/cosql_dataset/database",
                 },
             ),

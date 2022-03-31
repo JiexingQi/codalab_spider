@@ -56,16 +56,23 @@ def init_dataset_path(data_base_dir, dataset_name, mode):
             raise NotImplementedError
         dataset_output_path=os.path.join(data_base_dir, "preprocessed_dataset", dataset_name, "train.bin")
     elif mode == "dev": 
+        import os
+        
         if dataset_name == "spider" :
-            # dataset_path=os.path.join(data_base_dir, "ori_dataset", dataset_name, "dev.json")
-            dataset_path=os.path.join(data_base_dir, "/data/dev.json")
+            is_test_file_exist = os.path.exists("/data/test.json")
+            dev_or_test_filepath = "/data/test.json" if is_test_file_exist else "/data/sparc/dev.json"
+            dataset_path=os.path.join(data_base_dir, dev_or_test_filepath)
         elif dataset_name == "sparc" :
-            dataset_path=os.path.join(data_base_dir, "/data/sparc/dev.json")
+            is_test_file_exist = os.path.exists("/data/sparc/test.json")
+            dev_or_test_filepath = "/data/sparc/test.json" if is_test_file_exist else "/data/sparc/dev.json"
+            dataset_path=os.path.join(data_base_dir, dev_or_test_filepath)
             table_data_path=os.path.join(data_base_dir, "/data/sparc/tables.json")
             db_dir = os.path.join(data_base_dir, "/data/sparc/database")
         elif dataset_name == "cosql":
+            is_test_file_exist = os.path.exists("/cosql_dataset/sql_state_tracking/cosql_test.json")
+            dev_or_test_filepath = "/cosql_dataset/sql_state_tracking/cosql_test.json" if is_test_file_exist else "/cosql_dataset/sql_state_tracking/cosql_dev.json"
             db_dir = os.path.join(data_base_dir, "/cosql_dataset/database")
-            dataset_path=os.path.join(data_base_dir, "/cosql_dataset/sql_state_tracking/cosql_dev.json")
+            dataset_path=os.path.join(data_base_dir, dev_or_test_filepath)
             table_data_path=os.path.join(data_base_dir, "/cosql_dataset/tables.json")
         else:
             raise NotImplementedError
