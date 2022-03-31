@@ -56,8 +56,6 @@ def init_dataset_path(data_base_dir, dataset_name, mode):
             raise NotImplementedError
         dataset_output_path=os.path.join(data_base_dir, "preprocessed_dataset", dataset_name, "train.bin")
     elif mode == "dev": 
-        import os
-        
         if dataset_name == "spider" :
             is_test_file_exist = os.path.exists("/data/test.json")
             dev_or_test_filepath = "/data/test.json" if is_test_file_exist else "/data/sparc/dev.json"
