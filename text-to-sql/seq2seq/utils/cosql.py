@@ -13,13 +13,13 @@ def cosql_get_input(
     prefix: str,
     sep: str = " | ",
 ) -> str:
-    # "[prefix] [utterance n] [serialized schema] || [utterance n-1] | [utterance n-2] | ..."
+    # "[prefix] [utterance 1] | [utterance 2] | ... [utterance n] [serialized schema]" truncted in head
     if len(utterances) > 1:
-        reversed_utterance_head = (utterance.strip() for utterance in reversed(utterances[:-1]))
-        serialized_reversed_utterance_head = " || " + sep.join(reversed_utterance_head)
+        utterance_head = (utterance.strip() for utterance in utterances[:-1])
+        serialized_utterance_head = sep.join(utterance_head) + " | "
     else:
-        serialized_reversed_utterance_head = ""
-    return prefix + utterances[-1].strip() + " " + serialized_schema.strip() + serialized_reversed_utterance_head
+        serialized_utterance_head = ""
+    return prefix + serialized_utterance_head + utterances[-1].strip() + " " + serialized_schema.strip()
 
 
 def cosql_get_target(
@@ -69,9 +69,12 @@ def cosql_pre_process_function(
         inputs,
         max_length=max_source_length,
         padding=False,
-        truncation=True,
+        truncation=False,
         return_overflowing_tokens=False,
     )
+    for k,v in model_inputs.items():
+        for i in range(len(v)):
+            v[i] = v[i][-512:]
 
     targets = [
         cosql_get_target(
