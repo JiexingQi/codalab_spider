@@ -464,7 +464,8 @@ def preprocessing_lgerels2t5rels_changeOrder(data_base_dir, dataset_name, t5_pro
     print("Generate Relations...")
     
     if use_coref:
-        with open(f"./dataset_files/preprocessed_dataset/{dataset_name}/{mode}_coref.json", 'r') as load_f: 
+        # with open(f"./dataset_files/preprocessed_dataset/{dataset_name}/{mode}_coref.json", 'r') as load_f: 
+        with open("/data/sparc/dev_coref.json", 'r') as load_f: 
             fcntl.flock(load_f.fileno(), fcntl.LOCK_EX)
             coref_dataset = json.load(load_f)
     else:

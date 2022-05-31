@@ -1589,7 +1589,7 @@ class T5ForConditionalGeneration(T5PreTrainedModel):
 
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
         # self.relation_kinds = 43
-        self.relation_kinds = 45
+        self.relation_kinds = 47
         # self.relation_kinds = None
         if self.relation_kinds is not None:
             self.relation_k_emb = nn.Embedding(self.relation_kinds+1, config.d_kv, padding_idx=0)
