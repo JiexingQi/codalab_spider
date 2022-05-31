@@ -124,6 +124,12 @@ class DataTrainingArguments:
     lge_relation_path : Optional[str] = field(
         default="",
         metadata={"help": "Path to the lge relation pickle file."})
+    edge_type : Optional[str] = field(
+        default="Default",
+        metadata={"help": "The edge used in relation preprocessing."})
+    use_coref : bool = field(
+        default=False,
+        metadata={"help": "Whether to use coreference in relation preprocessing."})
 
     def __post_init__(self):
         if self.val_max_target_length is None:
@@ -224,26 +230,6 @@ def _prepare_train_split(
         num_proc=data_training_args.preprocessing_num_workers,
         load_from_cache_file=not data_training_args.overwrite_cache,
     )
-    # =====================================Add relation matrix to train dataset=======================
-    # if data_training_args.lge_relation_path != "":
-    #     import pickle 
-        
-    #     # relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/train_lge_update_relation.pickle", "rb"))
-    #     # relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/0223_train_lge_update_relation.pickle", "rb"))
-    #     # relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/train_db_lge_update_relation.pickle", "rb"))
-    #     relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/train_lge_relation.pickle", "rb"))
-    #     # relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/train_db_lge_relation.pickle", "rb"))
-    #     # relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/train_lge_toy.pickle", "rb"))
-    #     print("Use relation datafile: ", data_training_args.lge_relation_path+"/train_db_lge_update_relation.pickle")
-
-    #     def add_relation_info_train(example, idx, relation_matrix_l=relation_matrix_l):
-    #         example['relations'] = relation_matrix_l[idx]  
-    #         return example
-
-    #     dataset = dataset.map(add_relation_info_train, with_indices=True)
-    # else:
-    #     print("Do not use relation file.")
-    # ==========================================End =================================================
     
     if data_training_args.max_train_samples is not None:
         dataset = dataset.select(range(data_training_args.max_train_samples))
@@ -260,22 +246,19 @@ def _prepare_train_split(
         load_from_cache_file=not data_training_args.overwrite_cache,
     )
 
-
-    
-    # if data_training_args.lge_relation_path != "":
-    #     train_input_ids = [dataset[i]['input_ids'] for i in range(7000)]
-    #     relation_matrix_l = preprocessing_dataset_split(
-    #         train_input_ids, 
-    #         dataset_split_lgesql_filepath="/home/jxqi/text2sql/data/lge_files/train_jytang.rgatsql.bin", 
-    #         table_lgesql_filepath="/home/jxqi/text2sql/data/lge_files/tables_jytang.bin", 
-    #         mode="train"
-    #         )
     if data_args.split_dataset == "spider":
         train_input_ids = [dataset[i]['input_ids'] for i in range(7000)]
     else:
         train_input_ids = [dataset[i]['input_ids'] for i in range(len(dataset))]
-    
-    relation_matrix_l = preprocess_by_dataset(data_args.data_base_dir, data_args.split_dataset, train_input_ids, "train")
+     
+    relation_matrix_l = preprocess_by_dataset(
+        data_args.data_base_dir, 
+        data_args.split_dataset, 
+        train_input_ids, 
+        "train", 
+        edge_type=data_training_args.edge_type, 
+        use_coref=data_training_args.use_coref
+        )
 
     def add_relation_info_train(example, idx, relation_matrix_l=relation_matrix_l):
         example['relations'] = relation_matrix_l[idx]  
@@ -305,23 +288,6 @@ def _prepare_eval_split(
         load_from_cache_file=not data_training_args.overwrite_cache,
     )
 
-    # =====================================Add relation matrix to dev dataset=======================
-    # if data_training_args.lge_relation_path != "":
-    #     import pickle 
-        
-    #     # relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/dev_lge_update_relation.pickle", "rb"))
-    #     # relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/0223_dev_lge_update_relation.pickle", "rb"))
-    #     # relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/dev_db_lge_update_relation.pickle", "rb"))
-    #     relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/dev_lge_relation.pickle", "rb"))
-    #     # relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/dev_db_lge_relation.pickle", "rb"))
-    #     # relation_matrix_l = pickle.load(open(data_training_args.lge_relation_path+"/dev_lge_toy.pickle", "rb"))
-
-    #     def add_relation_info_dev(example, idx, relation_matrix_l=relation_matrix_l):
-    #         example['relations'] = relation_matrix_l[idx] 
-    #         return example
-
-    #     eval_dataset = eval_dataset.map(add_relation_info_dev, with_indices=True)
-    # ==========================================End ================================================
     column_names = eval_dataset.column_names
     eval_dataset = eval_dataset.map(
         lambda batch: pre_process_function(
@@ -335,25 +301,17 @@ def _prepare_eval_split(
         load_from_cache_file=not data_training_args.overwrite_cache,
     )
     
-    # if data_training_args.lge_relation_path != "":
-    #     dev_input_ids = [eval_dataset[i]['input_ids'] for i in range(1034)]
-    #     relation_matrix_l = preprocessing_dataset_split(
-    #         dev_input_ids, 
-    #         dataset_split_lgesql_filepath="/home/jxqi/text2sql/data/lge_files/dev_jytang.rgatsql.bin", 
-    #         table_lgesql_filepath="/home/jxqi/text2sql/data/lge_files/tables_jytang.bin", 
-    #         mode="dev"
-    #         )
-            
-    #     def add_relation_info_train(example, idx, relation_matrix_l=relation_matrix_l):
-    #         example['relations'] = relation_matrix_l[idx]  
-    #         return example
-
-    #     eval_dataset = eval_dataset.map(add_relation_info_train, with_indices=True)
-
     #TODO: It can not do the testing now (test will do dev still)
     eval_input_ids = [eval_dataset[i]['input_ids'] for i in range(len(eval_dataset))]
     
-    relation_matrix_l = preprocess_by_dataset(data_args.data_base_dir, data_args.split_dataset, eval_input_ids, "dev")
+    relation_matrix_l = preprocess_by_dataset(
+        data_args.data_base_dir, 
+        data_args.split_dataset, 
+        eval_input_ids, 
+        "dev", 
+        edge_type=data_training_args.edge_type, 
+        use_coref=data_training_args.use_coref
+        )
 
     def add_relation_info_train(example, idx, relation_matrix_l=relation_matrix_l):
         example['relations'] = relation_matrix_l[idx]  
