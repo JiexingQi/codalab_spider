@@ -10,4 +10,5 @@ RELATIONS = ['question-question-dist' + str(i) if i != 0 else 'question-question
     ['question-table-exactmatch', 'question-table-partialmatch', 'question-table-nomatch',
     'table-question-exactmatch', 'table-question-partialmatch', 'table-question-nomatch'] + \
     ['question-question-generic', 'table-table-generic', 'column-column-generic', 'table-column-generic', 'column-table-generic'] + \
-    ['*-*-identity', '*-question-generic', 'question-*-generic', '*-table-generic', 'table-*-generic', '*-column-generic', 'column-*-generic', 'has-dbcontent', 'has-dbcontent-r', 'Forward-Syntax', 'Backward-Syntax', 'None-Syntax', 'co_relations', 'coref_relations']
+    ['*-*-identity', '*-question-generic', 'question-*-generic', '*-table-generic', 'table-*-generic', '*-column-generic', 'column-*-generic', 'has-dbcontent', 'has-dbcontent-r']
+RELATION2ID_DICT = dict(zip(RELATIONS, [i for i in range(1, len(RELATIONS)+1)]))

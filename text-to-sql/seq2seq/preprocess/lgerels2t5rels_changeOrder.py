@@ -12,7 +12,7 @@ import json
 from tqdm import tqdm
 from transformers import AutoTokenizer
 from tokenizers import AddedToken
-from .transform_utils import mul_mul_match, get_idx_list, find_sep_mullen, find_all_sep_index_from_list, find_all_sep_pair_from_list, raise_key, merge_two_dict, decode_from_dict, decode_from_pair_dict, tokid2sent
+from .transform_utils import mul_mul_match_changeOrder, get_idx_list_changeOrder, find_sep_mullen, find_all_sep_index_from_list, find_all_sep_pair_from_list, raise_key, merge_two_dict, decode_from_dict, decode_from_pair_dict, tokid2sent
 from .constants import MAX_RELATIVE_DIST
 from .get_relation2id_dict import get_relation2id_dict
 
@@ -23,7 +23,7 @@ def match_question(t5_processed, dataset_lgesql, t5_tokenizer, lge_tokenizer, da
     total_example = 0
     t5_dataset_idx = 0
     for lge_dataset_idx in tqdm(range(len(dataset_lgesql))):
-        lge_aux_question_idx_list = get_idx_list(dataset_lgesql[lge_dataset_idx], dataset_name)
+        lge_aux_question_idx_list = get_idx_list_changeOrder(dataset_lgesql[lge_dataset_idx], dataset_name)
         for j, lge_aux_question_idx in enumerate(lge_aux_question_idx_list):
             t5_toks_ids = t5_processed[t5_dataset_idx]
             t5_dataset_idx += 1
@@ -31,14 +31,12 @@ def match_question(t5_processed, dataset_lgesql, t5_tokenizer, lge_tokenizer, da
             for id in t5_toks_ids:
                 w = t5_tokenizer.decode(id).replace("</s>", "")
                 t5_toks.append(w.replace(" ", ""))
-            aux_sep = find_sep_mullen(t5_toks, "|")
-            aux_text = t5_toks[aux_sep[0]+2:]
-            mul_idx = aux_sep[0]+2
+            aux_text = t5_toks
             aux_sep_list = find_all_sep_index_from_list(aux_text, "|")
             aux_text_list = []
             aux_start = 0
-            for aux_sep in aux_sep_list:
-                aux_text_list.append((aux_text[aux_start:aux_sep], mul_idx+aux_start))
+            for aux_sep in aux_sep_list[:len(lge_aux_question_idx)]:
+                aux_text_list.append((aux_text[aux_start:aux_sep], aux_start, aux_sep))
                 aux_start = aux_sep + 1
             for k, question_idx in enumerate(lge_aux_question_idx):
                 total_example += 1
@@ -49,22 +47,26 @@ def match_question(t5_processed, dataset_lgesql, t5_tokenizer, lge_tokenizer, da
                     sep = t5_toks.index("|")
                     t5_toks_k = t5_toks[:sep]
                     t5_bias = 0
+                    t5_sep = sep
                 else:
                     try:
-                        t5_toks_k = aux_text_list[k-1][0]
-                        t5_bias = aux_text_list[k-1][1]
+                        t5_toks_k = aux_text_list[k][0]
+                        t5_bias = aux_text_list[k][1]
+                        t5_sep = aux_text_list[k][2]
                     except:
                         if (len(t5_toks)<512):
                             err += 1
                         continue
                 t5_toks_k = ([subword.replace("▁", "") for subword in t5_toks_k])
                 lge_r_question_toks = [lge_tokenizer.decode(lge_tokenizer.encode(r_question_toks)[:-1]) for r_question_toks in lge_r_question_toks]
-                start = 0
-                toks_idx = 0
-                while toks_idx < len(lge_r_question_toks) and start < len(t5_toks_k):
-                    append_t5_idx, append_q_idx = mul_mul_match(t5_toks[t5_bias + start:],  lge_r_question_toks[toks_idx:])
-                    match_t5_id_list = [i for i in range(t5_bias+start,t5_bias+start+append_t5_idx)]
-                    match_q_id_list = [i for i in range(toks_idx,toks_idx+append_q_idx)]
+                start = t5_sep
+                toks_idx = len(lge_r_question_toks)
+                while toks_idx > 0 and start > 0:
+                    append_t5_idx, append_q_idx = mul_mul_match_changeOrder(t5_toks[t5_bias:start],  lge_r_question_toks[:toks_idx])
+                    match_t5_id_list = [i for i in range(t5_bias+append_t5_idx, start)]
+                    match_q_id_list = [i for i in range(append_q_idx,toks_idx)]
+#                     print(t5_toks[t5_bias+append_t5_idx: start], lge_r_question_toks[append_q_idx:toks_idx])
+#                     print(match_t5_id_list, match_q_id_list)
                     for q_idx in match_q_id_list:
                         question_lgeid2t5id[q_idx] = match_t5_id_list
                     if append_t5_idx == -1 and append_q_idx == -1:
@@ -80,11 +82,13 @@ def match_question(t5_processed, dataset_lgesql, t5_tokenizer, lge_tokenizer, da
                             print()
                         break
                     else:
-                        start += append_t5_idx
-                        toks_idx += append_q_idx
+                        start = t5_bias+append_t5_idx
+                        toks_idx = append_q_idx
+                
                 # wfile.write(str(lge_dataset_idx)+"\n"+str(lge_aux_question_idx_list)+"\n")
                 # wfile.write(" ".join(lge_r_question_toks)+"\n")
                 # wfile.write(" ".join(t5_toks)+"\n\n")
+#                 print(question_lgeid2t5id)
                 dataset_lgesql[lge_dataset_idx][f"question_lgeid2t5id_{j}#{question_idx}"] = question_lgeid2t5id
                 dataset_lgesql[lge_dataset_idx]["idx_list"] = lge_aux_question_idx_list
             dataset_lgesql[lge_dataset_idx][f"t5_toks_{j}"] = (t5_dataset_idx-1,t5_toks,t5_toks_ids)
@@ -108,11 +112,9 @@ def match_table_and_column(dataset_lgesql, table_lgesql, t5_tokenizer):
                 t5_toks.append(w)
                 t5_toks = ([subword for subword in t5_toks])
 
-            mul_idx = (find_sep_mullen(t5_toks, '|'))[0]
-            if mul_idx != len(t5_toks):
-                t5_toks = t5_toks[:mul_idx]
-
+            sep_idx_bias = len(lge_aux_question_idx)-1
             sep_index_list = find_all_sep_index_from_list(t5_toks, "|")
+            sep_index_list = sep_index_list[sep_idx_bias:]
 
             db_name = "".join([w for w in t5_toks[sep_index_list[0]+1:sep_index_list[1]]])
             dataset_lgesql[lge_dataset_idx][f"db_name_{j}"] = db_name
@@ -216,13 +218,13 @@ def match_table_and_column(dataset_lgesql, table_lgesql, t5_tokenizer):
                                     flag = False
                                     continue
             if (not flag):
-                # print(repr(col))
-                # print(column_sep_index_list)
-                # print(t5_toks[col_lidx: col_ridx])
-                # print(" ".join(t5_toks))
-                # print(lge_column)
-                # print(lge_column_ori)
-                # print(column_lgeid2t5id)
+                print(repr(col))
+                print(column_sep_index_list)
+                print(t5_toks[col_lidx: col_ridx])
+                print(" ".join(t5_toks))
+                print(lge_column)
+                print(lge_column_ori)
+                print(column_lgeid2t5id)
                 err += 1
             total_example += 1
             dataset_lgesql[lge_dataset_idx][f"column_lgeid2t5id_{j}"] = column_lgeid2t5id
@@ -318,7 +320,7 @@ def generate_coref_relations(relation, coref_dataset, cur_dataset_lgesql, j, REL
 
 
 
-def generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_DICT, edgeType, t5_tokenizer, dataset_name, coref_dataset, mode):
+def generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_DICT, edgeType, t5_tokenizer, dataset_name, coref_dataset, use_dependency, mode):
     err_edge = 0
     total_edge = 0
     t5_dataset_idx = 0
@@ -327,8 +329,6 @@ def generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_D
     for lge_dataset_idx in tqdm(range(len(dataset_lgesql))):
         lge_aux_question_idx_list = dataset_lgesql[lge_dataset_idx]["idx_list"]
         for j, lge_aux_question_idx in enumerate(lge_aux_question_idx_list):
-            
-            
 
             t5_toks_ids = dataset_lgesql[lge_dataset_idx][f"t5_toks_{j}"][2]
             t5_dataset_idx = dataset_lgesql[lge_dataset_idx][f"t5_toks_{j}"][0]
@@ -337,10 +337,11 @@ def generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_D
             relation = np.zeros((len(t5_toks_ids), len(t5_toks_ids)), dtype=int)
             
             generate_relations_between_questions(relation, lge_aux_question_idx, dataset_lgesql[lge_dataset_idx], RELATION2ID_DICT, j)
-            
             table_lgeid2t5id = dataset_lgesql[lge_dataset_idx][f"table_lgeid2t5id_{j}"]
             column_lgeid2t5id = dataset_lgesql[lge_dataset_idx][f"column_lgeid2t5id_{j}"]
             dbcontent_lgeid2dbt5id = dataset_lgesql[lge_dataset_idx][f"dbcontent_lgeid2dbt5id_{j}"]
+            
+            
             
             lge_t_num = len(table_lgesql[db_name]['table_names'])
             lge_c_num = len(table_lgesql[db_name]['column_names'])
@@ -362,7 +363,7 @@ def generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_D
                 
                 question_lgeid2t5id = dataset_lgesql[lge_dataset_idx][f"question_lgeid2t5id_{j}#{question_idx}"]
                 
-                if "Dependency" in edgeType:
+                if use_dependency:
                     qq_relations = dataset_lgesql[lge_dataset_idx][f"tree_relations_{question_idx}"]
                 else:
                     qq_relations = dataset_lgesql[lge_dataset_idx][f"relations_{question_idx}"]
@@ -426,7 +427,6 @@ def generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_D
     print(f"Edge match errors: {err_edge}/{total_edge}")
     return t5_dataset_idx, res_relations
 
-
 def init_tokenizer():
     t5_tokenizer = AutoTokenizer.from_pretrained('t5-small')
     lge_tokenizer = AutoTokenizer.from_pretrained('t5-small')
@@ -450,10 +450,10 @@ def init_dataset(data_base_dir, dataset_name, mode):
         dataset_lgesql = pickle.load(load_f)
     return dataset_lgesql, table_lgesql
 
-def preprocessing_lgerels2t5rels(data_base_dir, dataset_name, t5_processed, mode, edgeType="Default", use_coref = False):
+def preprocessing_lgerels2t5rels_changeOrder(data_base_dir, dataset_name, t5_processed, mode, edgeType="Default", use_coref = False, use_dependency = False):
     t5_tokenizer, lge_tokenizer = init_tokenizer()
     dataset_lgesql, table_lgesql = init_dataset(data_base_dir, dataset_name, mode)
-    RELATION2ID_DICT = get_relation2id_dict(edgeType, use_coref)
+    RELATION2ID_DICT, ID2RELATION_DICT, edge_num = get_relation2id_dict(edgeType, use_coref, use_dependency)
 
     print(f"Dataset: {dataset_name}")
     print(f"Mode: {mode}")
@@ -469,8 +469,14 @@ def preprocessing_lgerels2t5rels(data_base_dir, dataset_name, t5_processed, mode
             coref_dataset = json.load(load_f)
     else:
         coref_dataset = None
-    last_t5_dataset_idx, relations = generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_DICT, edgeType, t5_tokenizer, dataset_name, coref_dataset, mode)
+    last_t5_dataset_idx, relations = generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_DICT, edgeType, t5_tokenizer, dataset_name, coref_dataset, use_dependency, mode)
     # with open(f"{mode}.pickle", "wb") as load_f:
     #     fcntl.flock(load_f.fileno(), fcntl.LOCK_EX)
     #     pickle.dump(relations, load_f)   
     return last_t5_dataset_idx, relations
+
+# def main():
+#     t5_path = "/home/jytang/NLP/Text2sql/t5/picard/dataset_files/preprocessed_dataset/sparc/0512_change_order_dataset_db_sparc_split.pkl"
+#     with open(f"{t5_path}.pickle", "wb") as load_f:
+#         t5_preprocessed = pickle.load(load_f)
+#     preprocessing_lgerels2t5rels_changeOrder("/home/jytang/NLP/Text2sql/t5/picard/dataset_files/", "sparc", t5_preprocessed, "dev")

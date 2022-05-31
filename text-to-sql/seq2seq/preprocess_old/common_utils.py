@@ -8,50 +8,6 @@ import re
 
 from .constants import MAX_RELATIVE_DIST
 
-class Tree(object):
-    def __init__(self):
-        self.parent = None
-        self.num_children = 0
-        self.children = list()
-        self.children_relation = dict()
-        self._size = -1
-        self._depth = -1
-        self.parents = []
-
-
-    def add_child(self, child):
-        child.parent = self
-        self.num_children += 1
-        self.children.append(child)
-    
-    def add_parent(self, parent):
-        self.parents.extend(parent)
-
-    def add_relation(self, child_node, relation):
-        self.children_relation[child_node] = relation
-
-    def size(self):
-        if getattr(self, '_size') != -1:
-            return self._size
-        count = 1
-        for i in range(self.num_children):
-            count += self.children[i].size()
-        self._size = count
-        return self._size
-
-    def depth(self):
-        if getattr(self, '_depth') != -1:
-            return self._depth
-        count = 1
-        if self.num_children > 0:
-            for i in range(self.num_children):
-                child_depth = self.children[i].depth()
-                if child_depth > count:
-                    count = child_depth
-            count += 1
-        self._depth = count
-        return self._depth
-
 def is_number(s):
     try:
         float(s)
@@ -143,12 +99,11 @@ class Preprocessor():
         super(Preprocessor, self).__init__()
         self.db_dir = db_dir
         self.db_content = db_content
-        self.nlp_tokenize = stanza.Pipeline('en', processors='tokenize,mwt,pos,lemma,depparse', tokenize_pretokenized = False, use_gpu=True)#, use_gpu=False)
-        self.nlp_pretokenize = stanza.Pipeline('en', processors='tokenize,mwt,pos,lemma,depparse', tokenize_pretokenized = True, use_gpu=True)#, use_gpu=False)
+        self.nlp_tokenize = stanza.Pipeline('en', processors='tokenize,pos,lemma', tokenize_pretokenized = False, use_gpu=True)#, use_gpu=False)
+        self.nlp_pretokenize = stanza.Pipeline('en', processors='tokenize,pos,lemma', tokenize_pretokenized = True, use_gpu=True)#, use_gpu=False)
         self.stopwords = stopwords.words("english")
 
     def pipeline(self, entry: dict, db: dict, dataset_name: str, data_idx: int):
-        entry["final_preprocessed_text_list"] = []
         if dataset_name in ["cosql", "sparc"]:
             entry =  self.multi_turn_pipeline(entry, db, dataset_name, data_idx)
         elif dataset_name in ["spider"]:
@@ -157,9 +112,6 @@ class Preprocessor():
 
     def multi_turn_pipeline(self, entry: dict, db: dict, dataset_name: str, data_idx: int):
         """ db should be preprocessed """
-        # if coref_dataset is not None:
-        #     entry['coref'] = coref_dataset[data_idx]["coref"]
-        #     entry['coref_text_list'] = coref_dataset[data_idx]["text_list"]
         entry["text_list"] = []
         question = entry['final']['utterance']
         entry["text_list"].append(question)
@@ -168,7 +120,6 @@ class Preprocessor():
         for q in entry["text_list"]:
             q = q.split("|")
             entry["processed_text_list"].append(q)
-        # print(entry["processed_text_list"])
         for idx, turn_item in enumerate(entry['processed_text_list']):
             idx = str(idx)
             if len(turn_item) > 1:
@@ -255,55 +206,17 @@ class Preprocessor():
         db['relations'] = relations.tolist()
         return db
 
-    def read_tree(self, doc, tree_mat):
-        trees = dict()
-        root = None
-        
-        root_list = []
-        
-        bias = 0
-        for sent in doc.sentences: 
-            for word in sent.words:
-                tree = Tree()
-                tree.idx = word.id -1 + bias 
-                trees[tree.idx] = tree
-            bias += len(sent.words)
-        bias = 0
-        for idx, sent in enumerate(doc.sentences): 
-            # trees = trees_list[idx]
-            for word in sent.words:
-                head_id = word.head - 1 + bias
-                word_id = word.id - 1 + bias
-                if word.head - 1 == -1:
-                    root = trees[word_id]
-                    root_list.append([root, bias+len(sent.words)])
-                    continue
-                # tree_mat[head_id, word.id-1] = word.deprel
-                trees[head_id].add_child(trees[word_id])
-                tree_mat[head_id, word_id] = "Forward-Syntax"
-                tree_mat[word_id, head_id] = "Backward-Syntax"
-            bias += len(sent.words)
-        return root_list, tree_mat.tolist()
-
-    def seperate_sent(self, text):
-        seperate_pattern = r"(?<!\w\.\w.)(?<![A-Z]\.)(?<![A-Z][a-z]\.)(?<! [a-z]\.)(?<![A-Z][a-z][a-z]\.)(?<=\.|\?|\!)\"*\s*\s*(?:\W*)([A-Z])"
-        sep_text = re.sub(seperate_pattern, r"\n\1", text)
-        return sep_text.split("\n")
-
     def preprocess_question(self, entry: dict, db: dict, turn: str, dataset_name: str, data_idx: int):
         """ Tokenize, lemmatize, lowercase question"""
 
         if turn == "-1":
             question = " ".join(quote_normalization(dataset_name, data_idx, entry["question_toks"]))
-            # question = "\n".join(self.seperate_sent(question))
             entry["processed_text_list"] = [question]
         elif "#" in turn:
             parent_idx, son_idx = turn.split("#")
             question = entry["processed_text_list"][int(parent_idx)][int(son_idx)]
-            # question = "\n".join(self.seperate_sent(question))
         else:
             question = entry["processed_text_list"][int(turn)][0]
-            # question = "\n".join(self.seperate_sent(question))
         question = question.strip()
         if turn == "0":
             doc = self.nlp_tokenize(question)
@@ -314,8 +227,6 @@ class Preprocessor():
         entry[f'raw_question_toks_{turn}'] = raw_toks
         entry[f'ori_toks_{turn}'] = [w.text for s in doc.sentences for w in s.words]
         entry[f'processed_question_toks_{turn}'] = toks
-        # print(question, [w.text for s in doc.sentences for w in s.words])
-        entry["final_preprocessed_text_list"].append([turn, [w.text for s in doc.sentences for w in s.words], len([w.text for s in doc.sentences for w in s.words])])
 
         # relations in questions, q_num * q_num
         q_num, dtype = len(toks), '<U100'
@@ -331,10 +242,6 @@ class Preprocessor():
             starting = q_num - 1
         q_mat = np.array([dist_vec[starting - i: starting - i + q_num] for i in range(q_num)], dtype=dtype)
         entry[f'relations_{turn}'] = q_mat.tolist()
-
-        tree_mat = np.array([["None-Syntax"] * q_num for _ in range(q_num)], dtype=dtype)
-        root_list, tree_mat = self.read_tree(doc, tree_mat)
-        entry[f'tree_relations_{turn}'] = tree_mat
         return entry
 
 

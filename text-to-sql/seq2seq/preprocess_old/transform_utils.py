@@ -15,20 +15,6 @@ def mul_mul_match(t5_toks_list,  question_toks_list):
             return i, j
     return -1,-1
 
-def mul_mul_match_changeOrder(t5_toks_list,  question_toks_list):
-    """"match two list of question toks"""
-    t5_index = [i for i in range(0, len(t5_toks_list))]
-    t5_index.reverse()
-    question_index = [i for i in range(0, len(question_toks_list))]
-    question_index.reverse()
-    index_pair = list(itertools.product(t5_index, question_index))
-    for i, j in index_pair:
-        t5_toks = "".join(t5_toks_list[i:])
-        question_toks = "".join(question_toks_list[j:])
-        if t5_toks == question_toks:
-            return i, j
-    return -1,-1
-
 def cmp(str1, str2):
     l1 = str1.split('#')
     l2 = str2.split('#')
@@ -41,7 +27,7 @@ def cmp(str1, str2):
 def get_idx_list(res_dict, dataset_name):
     if dataset_name in ["cosql", "sparc"]:
         key = res_dict.keys()
-        key = [k.split("_")[-1] for k in key if "relations" in k and "tree" not in k]
+        key = [k.split("_")[-1] for k in key if "relations" in k]
         key.sort(key = functools.cmp_to_key(cmp))
         total_res = [[key[0]]]
         tmp = []
@@ -52,24 +38,7 @@ def get_idx_list(res_dict, dataset_name):
             a = tmp.copy()
             total_res.append(a)
     elif dataset_name in ["spider"]:
-        total_res = [['-1']]
-    return total_res
-
-def get_idx_list_changeOrder(res_dict, dataset_name):
-    if dataset_name in ["cosql", "sparc"]:
-        key = res_dict.keys()
-        key = [k.split("_")[-1] for k in key if "relations" in k and "tree" not in k]
-        key.sort(key = functools.cmp_to_key(cmp))
-        total_res = [[key[0]]]
-        tmp = []
-        for i in range(1, len(key)):
-            tmp.append(key[i])
-            if ("#" in key[i] and i+1 < len(key) and key[i].split('#')[0] == key[i+1].split('#')[0]):
-                continue
-            a = tmp.copy()
-            total_res.append(a)
-    elif dataset_name in ["spider"]:
-        total_res = [['-1']]
+        total_res = [[-1]]
     return total_res
 
 def isValid(idx, maxlen):

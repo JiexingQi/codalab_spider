@@ -63,6 +63,16 @@ def fine_look(load_dict):
             # print()
 
 
+def change_column_id_equal(load_dict_item, new_id, start, end):
+    # [start, end)
+    for i in range(start, end):
+        load_dict_item[i][0] = new_id
+    
+def change_column_id_add(load_dict_item, raise_id, start, end):
+    # [start, end)
+    for i in range(start, end):
+        load_dict_item[i][0] += raise_id
+
 def get_column_compact_list(load_dict_item):
     # index start from -1
     max_idx = load_dict_item[-1][0]
@@ -82,107 +92,103 @@ def recovery_from_compact_list(compact_list):
 def modify_tables_spider(load_dict):
     for idx, item in enumerate(load_dict):
         if item["db_id"] == "store_1":
-            diff_item = item["table_names"]
+            diff_item = item["table_names_original"]
             diff_item[0], diff_item[1] = diff_item[1], diff_item[0]
 
-            diff_item = item["column_names"]
-            diff_compact_list = get_column_compact_list(diff_item)
-            pop_item = diff_compact_list.pop(1)
-            diff_compact_list.insert(2, pop_item)
-            item["column_names"] = recovery_from_compact_list(diff_compact_list)
-            # for pair in zip(item["column_names"], item["column_names_original"]):
-            #     print(pair)
+            diff_item = item["column_names_original"]
+            diff_item[1:3], diff_item[3:5] = diff_item[3:5], diff_item[1:3]
+            change_column_id_equal(diff_item, 0, 1, 3)
+            change_column_id_equal(diff_item, 1, 3, 5)
+
     return load_dict
 
 def modify_tables_cosql(load_dict):
     for idx, item in enumerate(load_dict):
         if item["db_id"] == "scholar":
-            diff_item = item["table_names"]
-            pop_item = diff_item.pop(1)
-            diff_item.insert(5, pop_item)
-            pop_item = diff_item.pop(-2)
-            diff_item.insert(0, pop_item)
+            diff_item = item["table_names_original"]
+            pop_item = diff_item.pop(0)
+            diff_item.insert(-1, pop_item)
+            pop_item = diff_item.pop(5)
+            diff_item.insert(1, pop_item)
 
-            diff_item = item["column_names"]
-            diff_compact_list = get_column_compact_list(diff_item)
-            pop_item = diff_compact_list.pop(-2)
-            diff_compact_list.insert(1, pop_item)
-            pop_item = diff_compact_list.pop(3)
-            diff_compact_list.insert(7, pop_item)
-            item["column_names"] = recovery_from_compact_list(diff_compact_list)
-
-        elif item["db_id"] == "store_1":
-            diff_item = item["table_names"]
-            diff_item[0], diff_item[1] = diff_item[1], diff_item[0]
-
-            diff_item = item["column_names"]
+            diff_item = item["column_names_original"]
             diff_compact_list = get_column_compact_list(diff_item)
             pop_item = diff_compact_list.pop(1)
+            diff_compact_list.insert(9, pop_item)
+            pop_item = diff_compact_list.pop(6)
             diff_compact_list.insert(2, pop_item)
-            item["column_names"] = recovery_from_compact_list(diff_compact_list)
+            item["column_names_original"] = recovery_from_compact_list(diff_compact_list)
+
+        elif item["db_id"] == "store_1":
+            diff_item = item["table_names_original"]
+            diff_item[0], diff_item[1] = diff_item[1], diff_item[0]
+
+            diff_item = item["column_names_original"]
+            diff_item[1:3], diff_item[3:5] = diff_item[3:5], diff_item[1:3]
+            change_column_id_equal(diff_item, 0, 1, 3)
+            change_column_id_equal(diff_item, 1, 3, 5)
 
         elif item["db_id"] == "formula_1":
-            diff_item = item["table_names"]
-            pop_item = diff_item.pop(-3)
-            diff_item.insert(0, pop_item)
+            diff_item = item["table_names_original"]
+            pop_item = diff_item.pop(0)
+            diff_item.insert(-2, pop_item)
 
-            diff_item = item["column_names"]
-            diff_compact_list = get_column_compact_list(diff_item)
-            pop_item = diff_compact_list.pop(11)
-            diff_compact_list.insert(1, pop_item)
-            item["column_names"] = recovery_from_compact_list(diff_compact_list)
-            
+            diff_item = item["column_names_original"]
+            diff_item = diff_item[0:1]+ diff_item[10:82] +diff_item[1:10] +diff_item[82:]
+            change_column_id_add(diff_item, -1, 1, 72)
+            change_column_id_equal(diff_item, 10, 72, 82)
+            item["column_names_original"] = diff_item
 
         elif item["db_id"] == "league_2":
-            diff_item = item["table_names"]
-            pop_item = diff_item.pop(-1)
-            diff_item.insert(2, pop_item)
+            diff_item = item["table_names_original"]
+            pop_item = diff_item.pop(2)
+            diff_item.append(pop_item)
 
-            diff_item = item["column_names"]
-            diff_compact_list = get_column_compact_list(diff_item)
-            pop_item = diff_compact_list.pop(-1)
-            diff_compact_list.insert(2, pop_item)
-            item["column_names"] = recovery_from_compact_list(diff_compact_list)
+            diff_item = item["column_names_original"]
+            diff_item = diff_item[:65]+diff_item[69:]+diff_item[65:69]
+            change_column_id_add(diff_item, -1, 69, len(diff_item))
+            change_column_id_equal(diff_item, 5, len(diff_item)-4, len(diff_item))
+            item["column_names_original"] = diff_item
 
     return load_dict
     
 def modify_tables_sparc(load_dict):  
     for idx, item in enumerate(load_dict):
         if item["db_id"] == "scholar":
-            diff_item = item["table_names"]
-            pop_item = diff_item.pop(1)
-            diff_item.insert(5, pop_item)
-            pop_item = diff_item.pop(-2)
-            diff_item.insert(0, pop_item)
+            diff_item = item["table_names_original"]
+            pop_item = diff_item.pop(0)
+            diff_item.insert(-1, pop_item)
+            pop_item = diff_item.pop(5)
+            diff_item.insert(1, pop_item)
 
-            diff_item = item["column_names"]
+            diff_item = item["column_names_original"]
             diff_compact_list = get_column_compact_list(diff_item)
-            pop_item = diff_compact_list.pop(-2)
-            diff_compact_list.insert(1, pop_item)
-            pop_item = diff_compact_list.pop(3)
-            diff_compact_list.insert(7, pop_item)
-            item["column_names"] = recovery_from_compact_list(diff_compact_list)
+            pop_item = diff_compact_list.pop(1)
+            diff_compact_list.insert(9, pop_item)
+            pop_item = diff_compact_list.pop(6)
+            diff_compact_list.insert(2, pop_item)
+            item["column_names_original"] = recovery_from_compact_list(diff_compact_list)
 
         elif item["db_id"] == "store_1":
-            diff_item = item["table_names"]
+            diff_item = item["table_names_original"]
             diff_item[0], diff_item[1] = diff_item[1], diff_item[0]
 
-            diff_item = item["column_names"]
+            diff_item = item["column_names_original"]
             diff_compact_list = get_column_compact_list(diff_item)
             pop_item = diff_compact_list.pop(1)
             diff_compact_list.insert(2, pop_item)
-            item["column_names"] = recovery_from_compact_list(diff_compact_list)
+            item["column_names_original"] = recovery_from_compact_list(diff_compact_list)
 
         elif item["db_id"] == "formula_1":
-            diff_item = item["table_names"]
-            pop_item = diff_item.pop(-3)
-            diff_item.insert(0, pop_item)
+            diff_item = item["table_names_original"]
+            pop_item = diff_item.pop(0)
+            diff_item.insert(-2, pop_item)
 
-            diff_item = item["column_names"]
+            diff_item = item["column_names_original"]
             diff_compact_list = get_column_compact_list(diff_item)
-            pop_item = diff_compact_list.pop(11)
-            diff_compact_list.insert(1, pop_item)
-            item["column_names"] = recovery_from_compact_list(diff_compact_list)
+            pop_item = diff_compact_list.pop(1)
+            diff_compact_list.insert(11, pop_item)
+            item["column_names_original"] = recovery_from_compact_list(diff_compact_list)
 
     return load_dict
  

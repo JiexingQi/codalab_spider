@@ -2,19 +2,16 @@ import enum
 from json.tool import main
 import pickle
 from tkinter.tix import MAIN
-from tokenize import group
 import numpy as np
 import itertools
 import os
 import fcntl
-import json
 
 from tqdm import tqdm
 from transformers import AutoTokenizer
 from tokenizers import AddedToken
 from .transform_utils import mul_mul_match, get_idx_list, find_sep_mullen, find_all_sep_index_from_list, find_all_sep_pair_from_list, raise_key, merge_two_dict, decode_from_dict, decode_from_pair_dict, tokid2sent
-from .constants import MAX_RELATIVE_DIST
-from .get_relation2id_dict import get_relation2id_dict
+from .constants import RELATION2ID_DICT, MAX_RELATIVE_DIST
 
 
 
@@ -230,7 +227,7 @@ def match_table_and_column(dataset_lgesql, table_lgesql, t5_tokenizer):
             dataset_lgesql[lge_dataset_idx][f"dbcontent_lgeid2dbt5id_{j}"] = dbcontent_lgeid2dbt5id  
     print(f"DB match errors: {err}/{total_example}")
 
-def generate_relations_between_questions(relation, lge_aux_question_idx, dataset_lgesql_item, RELATION2ID_DICT, j):
+def generate_relations_between_questions(relation, lge_aux_question_idx, dataset_lgesql_item, j):
     question_t5_id_dict = {}
     for k, question_idx in enumerate(lge_aux_question_idx):
         if f"question_lgeid2t5id_{j}#{question_idx}" not in dataset_lgesql_item.keys() or len(dataset_lgesql_item[f"question_lgeid2t5id_{j}#{question_idx}"])==0:
@@ -255,70 +252,8 @@ def generate_relations_between_questions(relation, lge_aux_question_idx, dataset
                     for pair_i, pair_j in itertools.product(last_t5_ids[last_t5_idx], pre_t5_ids[pre_t5_idx]):
                         relation[pair_i][pair_j] = RELATION2ID_DICT[f"question-question-dist{distance}"]
                         relation[pair_j][pair_i] = RELATION2ID_DICT[f"question-question-dist{-distance}"]
-
-
-def remove_notused_coref(lge_aux_question_idx, coref_dataset):
-    used_coref_dataset = {}
-    
-    # print(coref_dataset)
-    for group_key in coref_dataset["coref"].keys():
-        new_group_list = []
-        for group_item_list in coref_dataset["coref"][group_key]["group"]:
-            new_group_item_list = []
-            for item in group_item_list:
-                if item["turn"] in lge_aux_question_idx:
-                    new_group_item_list.append(item)
-            if len(new_group_item_list) >= 1:
-                new_group_list.append(new_group_item_list)
-
-        if len(new_group_list) >= 2:
-            used_coref_dataset[group_key] = new_group_list
-        # used_set = coref_dataset["coref"][group_key]["used_turn"]
-        # for turn in used_set:
-        #     if turn not in lge_aux_question_idx:
-        #         flag = False
-        #         break
-        # if flag:    
-        #     used_coref_dataset[group_key] = coref_dataset["coref"][group_key]
-    # print(coref_dataset)
-    # print(lge_aux_question_idx)
-    # print(used_coref_dataset)
-    # print()
-    return used_coref_dataset
-
-
-def generate_coref_relations(relation, coref_dataset, cur_dataset_lgesql, j, RELATION2ID_DICT):
-    for group in coref_dataset.keys():
-        coref_relation_t5id_list = []
-        for coref_li in coref_dataset[group]:
-            co_relation_t5id_list = []
-            for coref_item in coref_li:
-                if (f"question_lgeid2t5id_{j}#{coref_item['turn']}" not in cur_dataset_lgesql.keys()) or len(cur_dataset_lgesql[f"question_lgeid2t5id_{j}#{coref_item['turn']}"].keys())==0:
-                    continue
-                
-                question_lgeid2t5id = cur_dataset_lgesql[f"question_lgeid2t5id_{j}#{coref_item['turn']}"] 
-
-                if coref_item["position"] not in question_lgeid2t5id.keys():
-                    continue
-                t5_id = question_lgeid2t5id[coref_item["position"]]
-                co_relation_t5id_list.append(t5_id)
-            coref_relation_t5id_list.append([_ for item in co_relation_t5id_list for _ in item])
-            # print(co_relation_t5id_list)
-            if len(co_relation_t5id_list) > 1:
-                for pair_i, pair_j in itertools.combinations(co_relation_t5id_list, 2):
-                    relation[pair_i][pair_j] = RELATION2ID_DICT["co_relations"]
-                    relation[pair_j][pair_i] = RELATION2ID_DICT["co_relations"]
-        
-        for ii in range(len(coref_relation_t5id_list)): 
-            for jj in range(ii+1, len(coref_relation_t5id_list)):
-                for pair_i, pair_j in itertools.product(coref_relation_t5id_list[ii], coref_relation_t5id_list[jj]):
-                    relation[pair_i][pair_j] = RELATION2ID_DICT["coref_relations"]
-
-            
-
-
-
-def generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_DICT, edgeType, t5_tokenizer, dataset_name, coref_dataset, mode):
+  
+def generate_relations(dataset_lgesql, t5_processed, table_lgesql, t5_tokenizer, dataset_name, mode):
     err_edge = 0
     total_edge = 0
     t5_dataset_idx = 0
@@ -328,15 +263,13 @@ def generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_D
         lge_aux_question_idx_list = dataset_lgesql[lge_dataset_idx]["idx_list"]
         for j, lge_aux_question_idx in enumerate(lge_aux_question_idx_list):
             
-            
-
             t5_toks_ids = dataset_lgesql[lge_dataset_idx][f"t5_toks_{j}"][2]
             t5_dataset_idx = dataset_lgesql[lge_dataset_idx][f"t5_toks_{j}"][0]
             db_name = dataset_lgesql[lge_dataset_idx][f"db_name_{j}"]
             
             relation = np.zeros((len(t5_toks_ids), len(t5_toks_ids)), dtype=int)
             
-            generate_relations_between_questions(relation, lge_aux_question_idx, dataset_lgesql[lge_dataset_idx], RELATION2ID_DICT, j)
+            generate_relations_between_questions(relation, lge_aux_question_idx, dataset_lgesql[lge_dataset_idx], j)
             
             table_lgeid2t5id = dataset_lgesql[lge_dataset_idx][f"table_lgeid2t5id_{j}"]
             column_lgeid2t5id = dataset_lgesql[lge_dataset_idx][f"column_lgeid2t5id_{j}"]
@@ -347,12 +280,6 @@ def generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_D
             
             dbcontent_lgeid2dbt5id_raise = raise_key(dbcontent_lgeid2dbt5id, lge_t_num)
             schema_lgeid2t5id = merge_two_dict(table_lgeid2t5id, column_lgeid2t5id, lge_t_num)
-
-            if coref_dataset is not None:
-                used_coref_dataset = remove_notused_coref(lge_aux_question_idx, coref_dataset[lge_dataset_idx])
-                if len(used_coref_dataset.keys()) > 0:
-                    generate_coref_relations(relation, used_coref_dataset, dataset_lgesql[lge_dataset_idx], j, RELATION2ID_DICT)
-
             for k, question_idx in enumerate(lge_aux_question_idx):
                 if (f"question_lgeid2t5id_{j}#{question_idx}" not in dataset_lgesql[lge_dataset_idx].keys()):
                     if len(t5_toks_ids) < 512:
@@ -362,10 +289,7 @@ def generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_D
                 
                 question_lgeid2t5id = dataset_lgesql[lge_dataset_idx][f"question_lgeid2t5id_{j}#{question_idx}"]
                 
-                if "Dependency" in edgeType:
-                    qq_relations = dataset_lgesql[lge_dataset_idx][f"tree_relations_{question_idx}"]
-                else:
-                    qq_relations = dataset_lgesql[lge_dataset_idx][f"relations_{question_idx}"]
+                qq_relations = dataset_lgesql[lge_dataset_idx][f"relations_{question_idx}"]
                 ss_relations = table_lgesql[dataset_lgesql[lge_dataset_idx]["database_id"]]["relations"] if dataset_name in ["cosql", "sparc"] else table_lgesql[dataset_lgesql[lge_dataset_idx]["db_id"]]["relations"]
                 qs_relations = dataset_lgesql[lge_dataset_idx][f"schema_linking_{question_idx}"][0]
                 sq_relations = dataset_lgesql[lge_dataset_idx][f"schema_linking_{question_idx}"][1]
@@ -450,10 +374,9 @@ def init_dataset(data_base_dir, dataset_name, mode):
         dataset_lgesql = pickle.load(load_f)
     return dataset_lgesql, table_lgesql
 
-def preprocessing_lgerels2t5rels(data_base_dir, dataset_name, t5_processed, mode, edgeType="Default", use_coref = False):
+def preprocessing_lgerels2t5rels(data_base_dir, dataset_name, t5_processed, dataset_lgesql, table_lgesql, mode):
     t5_tokenizer, lge_tokenizer = init_tokenizer()
-    dataset_lgesql, table_lgesql = init_dataset(data_base_dir, dataset_name, mode)
-    RELATION2ID_DICT = get_relation2id_dict(edgeType, use_coref)
+    # dataset_lgesql, table_lgesql = init_dataset(data_base_dir, dataset_name, mode)
 
     print(f"Dataset: {dataset_name}")
     print(f"Mode: {mode}")
@@ -462,15 +385,9 @@ def preprocessing_lgerels2t5rels(data_base_dir, dataset_name, t5_processed, mode
     print("Match Table, Columns, DB Contents...")
     match_table_and_column(dataset_lgesql, table_lgesql, t5_tokenizer)
     print("Generate Relations...")
-    
-    if use_coref:
-        with open(f"./dataset_files/preprocessed_dataset/{dataset_name}/{mode}_coref.json", 'r') as load_f: 
-            fcntl.flock(load_f.fileno(), fcntl.LOCK_EX)
-            coref_dataset = json.load(load_f)
-    else:
-        coref_dataset = None
-    last_t5_dataset_idx, relations = generate_relations(dataset_lgesql, t5_processed, table_lgesql, RELATION2ID_DICT, edgeType, t5_tokenizer, dataset_name, coref_dataset, mode)
+    last_t5_dataset_idx, relations = generate_relations(dataset_lgesql, t5_processed, table_lgesql, t5_tokenizer, dataset_name, mode)
     # with open(f"{mode}.pickle", "wb") as load_f:
     #     fcntl.flock(load_f.fileno(), fcntl.LOCK_EX)
     #     pickle.dump(relations, load_f)   
     return last_t5_dataset_idx, relations
+
