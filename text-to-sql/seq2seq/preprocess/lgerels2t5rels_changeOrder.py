@@ -450,9 +450,9 @@ def init_dataset(data_base_dir, dataset_name, mode):
         dataset_lgesql = pickle.load(load_f)
     return dataset_lgesql, table_lgesql
 
-def preprocessing_lgerels2t5rels_changeOrder(data_base_dir, dataset_name, t5_processed, mode, edgeType="Default", use_coref = False, use_dependency = False):
+def preprocessing_lgerels2t5rels_changeOrder(data_base_dir, dataset_name, t5_processed, dataset_lgesql, table_lgesql, mode, edgeType="Default", use_coref = False, use_dependency = False):
     t5_tokenizer, lge_tokenizer = init_tokenizer()
-    dataset_lgesql, table_lgesql = init_dataset(data_base_dir, dataset_name, mode)
+    # dataset_lgesql, table_lgesql = init_dataset(data_base_dir, dataset_name, mode)
     RELATION2ID_DICT, ID2RELATION_DICT, edge_num = get_relation2id_dict(edgeType, use_coref, use_dependency)
 
     print(f"Dataset: {dataset_name}")

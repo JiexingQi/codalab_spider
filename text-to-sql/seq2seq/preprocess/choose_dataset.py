@@ -9,7 +9,7 @@ def preprocess_by_dataset(data_base_dir, dataset_name, t5_processed, mode, edge_
     # edgeType = "Default"
     # use_coref = True
     # use_dependency =True
-    preprocessing_generate_lgerels(data_base_dir, dataset_name, mode, use_coref, use_dependency)
+    dataset_lgesql, table_lgesql = preprocessing_generate_lgerels(data_base_dir = data_base_dir, dataset_name = dataset_name, mode = mode, used_coref = use_coref, use_dependency = use_dependency)
     # _, relations=preprocessing_lgerels2t5rels(data_base_dir, dataset_name, t5_processed, mode, edgeType, use_coref)
-    _, relations = preprocessing_lgerels2t5rels_changeOrder(data_base_dir, dataset_name, t5_processed, mode, edge_type, use_coref, use_dependency)
+    _, relations = preprocessing_lgerels2t5rels_changeOrder(data_base_dir = data_base_dir, dataset_name = dataset_name, t5_processed = t5_processed, dataset_lgesql = dataset_lgesql, table_lgesql = table_lgesql, mode = mode, edgeType = edge_type, use_coref = use_coref, use_dependency = use_dependency)
     return relations
