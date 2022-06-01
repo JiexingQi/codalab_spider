@@ -1,6 +1,6 @@
 {
     "run_name": "eval_codalab",
-    "model_name_or_path": "Jiexing/sparc_add_coref_t5_3b_order_0514_ckpt-5696",
+    "model_name_or_path": "Jiexing/sparc_add_coref_t5_3b_order_0514_ckpt-4224",
     "dataset": "sparc",
     "source_prefix": "",
     "schema_serialization_type": "custom",
